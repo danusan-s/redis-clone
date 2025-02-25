@@ -1,27 +1,69 @@
+#include <cassert>
 #include <cstring>
 #include <iostream>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
-static void process_client(int fd) {
-  // We can replace read/write with recv/send if we want to specify more options
+const size_t k_max_msg = 4096;
 
-  char rbuf[64];
-  ssize_t n = read(fd, rbuf, sizeof(rbuf) - 1);
-  if (n < 0) {
-    std::cout << "Error: " << strerror(errno) << std::endl;
-    return;
+static int32_t read_full(int fd, char *buf, size_t n) {
+  while (n > 0) {
+    ssize_t rv = read(fd, buf, n);
+    if (rv <= 0) {
+      return -1; // error, or unexpected EOF
+    }
+    assert((size_t)rv <= n);
+    n -= (size_t)rv;
+    buf += rv;
   }
-  if (n == 0) {
-    std::cout << "Client closed connection" << std::endl;
-    return;
-  }
-  rbuf[n] = '\0';
-  printf("Received %ld bytes: %s\n", n, rbuf);
+  return 0;
+}
 
-  char wbuf[] = "Hello, client!";
-  write(fd, wbuf, strlen(wbuf));
+static int32_t write_all(int fd, const char *buf, size_t n) {
+  while (n > 0) {
+    ssize_t rv = write(fd, buf, n);
+    if (rv <= 0) {
+      return -1; // error
+    }
+    assert((size_t)rv <= n);
+    n -= (size_t)rv;
+    buf += rv;
+  }
+  return 0;
+}
+
+static int32_t process_single_request(int connfd) {
+  // 4 bytes header
+  char rbuf[4 + k_max_msg];
+  errno = 0;
+  int32_t err = read_full(connfd, rbuf, 4);
+  if (err) {
+    std::cout << (errno == 0 ? "EOF" : "read() error") << std::endl;
+    return err;
+  }
+  uint32_t len = 0;
+  memcpy(&len, rbuf, 4); // assume little endian
+  if (len > k_max_msg) {
+    std::cout << "message too long" << std::endl;
+    return -1;
+  }
+  // request body
+  err = read_full(connfd, &rbuf[4], len);
+  if (err) {
+    std::cout << "read() error" << std::endl;
+    return err;
+  }
+
+  printf("client says: %.*s\n", len, &rbuf[4]);
+
+  // reply using the same protocol
+  const char reply[] = "world";
+  char wbuf[4 + sizeof(reply)];
+  len = (uint32_t)strlen(reply);
+  memcpy(wbuf, &len, 4);
+  memcpy(&wbuf[4], reply, len);
+  return write_all(connfd, wbuf, 4 + len);
 }
 
 int main(int argc, char *argv[]) {
@@ -54,7 +96,7 @@ int main(int argc, char *argv[]) {
   }
 
   while (true) {
-    // Accept a connection
+    // Accept a connection from a client
     struct sockaddr_in client_addr = {};
     socklen_t addrlen = sizeof(client_addr);
     int client_fd = accept(fd, (struct sockaddr *)&client_addr, &addrlen);
@@ -62,8 +104,13 @@ int main(int argc, char *argv[]) {
       std::cout << "Error: " << strerror(errno) << std::endl;
     }
 
-    // Do something with the client connection
-    process_client(client_fd);
+    // Process all requests from the client one by one
+    while (true) {
+      int32_t err = process_single_request(client_fd);
+      if (err) {
+        break;
+      }
+    }
 
     // Close the client connection
     close(client_fd);
