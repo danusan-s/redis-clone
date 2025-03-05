@@ -43,3 +43,6 @@ void hm_clear(HMap *hmap);
 
 // get the size of the hashtable
 size_t hm_size(HMap *hmap);
+
+// invoke the callback on each node until it returns false
+void hm_foreach(HMap *hmap, bool (*f)(HNode *, void *), void *arg);
