@@ -14,7 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 # Add server executable
-add_executable(server src/server.cpp src/hashtable.cpp)
+add_executable(server src/server.cpp src/hashtable.cpp src/avltree.cpp src/zset.cpp )
 
 # Add client executable
 add_executable(client src/client.cpp)
