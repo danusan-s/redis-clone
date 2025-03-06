@@ -9,15 +9,24 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Set the C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+# Source directory
+set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# Get all source files in the src directory
+file(GLOB_RECURSE ALL_SOURCES "${SRC_DIR}/*.cpp")
+
+# Create a list for server sources by removing client.cpp
+set(SERVER_SOURCES ${ALL_SOURCES})
+list(FILTER SERVER_SOURCES EXCLUDE REGEX ".*client\\.cpp$")
 
 # Include the include directory
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
-# Add server executable
-add_executable(server src/server.cpp src/hashtable.cpp src/avltree.cpp src/zset.cpp src/heap.cpp src/thread_pool.cpp)
+# Create server executable
+add_executable(server ${SERVER_SOURCES})
 
-# Add client executable
-add_executable(client src/client.cpp)
+# Create client executable from just client.cpp
+add_executable(client ${SRC_DIR}/client.cpp)
 
 # Optional: Set output directory for the executable
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
