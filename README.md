@@ -2,6 +2,8 @@
 This is a replication of Redis built using C++. This project was made by following the book "Build Your Own Redis" by James Smith.
 This project was made to understand the internals of Redis and how it works. Think of it like a case study rather than a full on project.
 
+Note: This project uses syscalls on Linux and will not work on other operating systems. 
+
 ## Features
 
 - A server that stores the database in memory
