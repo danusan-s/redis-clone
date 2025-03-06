@@ -14,7 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 # Add server executable
-add_executable(server src/server.cpp src/hashtable.cpp src/avltree.cpp src/zset.cpp )
+add_executable(server src/server.cpp src/hashtable.cpp src/avltree.cpp src/zset.cpp)
 
 # Add client executable
 add_executable(client src/client.cpp)
@@ -22,8 +22,12 @@ add_executable(client src/client.cpp)
 # Optional: Set output directory for the executable
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
-# Optional: Enable warnings
+# Optional: Enable warnings and AddressSanitizer
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(server PRIVATE -Wall -Wextra)
-    target_compile_options(client PRIVATE -Wall -Wextra)
+    target_compile_options(server PRIVATE -Wall -Wextra -fsanitize=address -g -fno-omit-frame-pointer)
+    target_compile_options(client PRIVATE -Wall -Wextra -fsanitize=address -g -fno-omit-frame-pointer)
+
+    target_link_options(server PRIVATE -fsanitize=address)
+    target_link_options(client PRIVATE -fsanitize=address)
 endif()
+
