@@ -1,0 +1,54 @@
+#include "heap.h"
+
+static size_t get_parent(size_t i) { return (i + 1) / 2 - 1; }
+
+static size_t get_left(size_t i) { return i * 2 + 1; }
+
+static size_t get_right(size_t i) { return i * 2 + 2; }
+
+static void bubble_up(HeapItem *a, size_t pos) {
+  HeapItem t = a[pos];
+  while (pos > 0 && a[get_parent(pos)].val > t.val) {
+    // swap with the parent
+    a[pos] = a[get_parent(pos)];
+    *a[pos].ref = pos;
+    pos = get_parent(pos);
+  }
+  a[pos] = t;
+  *a[pos].ref = pos;
+}
+
+static void bubble_down(HeapItem *a, size_t pos, size_t len) {
+  HeapItem t = a[pos];
+  while (true) {
+    // find the smallest one among the parent and their kids
+    size_t l = get_left(pos);
+    size_t r = get_right(pos);
+    size_t min_pos = pos;
+    uint64_t min_val = t.val;
+    if (l < len && a[l].val < min_val) {
+      min_pos = l;
+      min_val = a[l].val;
+    }
+    if (r < len && a[r].val < min_val) {
+      min_pos = r;
+    }
+    if (min_pos == pos) {
+      break;
+    }
+    // swap with the kid
+    a[pos] = a[min_pos];
+    *a[pos].ref = pos;
+    pos = min_pos;
+  }
+  a[pos] = t;
+  *a[pos].ref = pos;
+}
+
+void heap_update(HeapItem *a, size_t pos, size_t len) {
+  if (pos > 0 && a[get_parent(pos)].val > a[pos].val) {
+    bubble_up(a, pos);
+  } else {
+    bubble_down(a, pos, len);
+  }
+}
